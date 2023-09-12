@@ -1,13 +1,6 @@
-//!CPU: Intel 8080 @ 2MHz (CPU similar to the (newer) Zilog Z80)
-
 #![allow(clippy::unusual_byte_groupings)]
 
-use crate::{
-    debug_utils,
-    machine::{MachineState, PortState},
-    space_invaders_rom,
-    sound,
-};
+use crate::{debug_utils, machine::MachineState, space_invaders_rom};
 use bitflags::bitflags;
 use std::{
     convert::From,
@@ -1094,11 +1087,7 @@ impl MachineState {
                 opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xd3 => {
-                opcode_out(
-                    &mut self.processor_state,
-                    &mut self.mem_map,
-                    self.port_state.clone(),
-                );
+                println!("0xd3, unimplemented for sm83");
             }
             0xd4 => {
                 opcode_call(&mut self.processor_state, &mut self.mem_map);
@@ -1122,11 +1111,7 @@ impl MachineState {
                 opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xdb => {
-                opcode_in(
-                    &mut self.processor_state,
-                    &mut self.mem_map,
-                    self.port_state.clone(),
-                );
+                println!("0xdb, unimplemented for SM83");
             }
             0xdc => {
                 opcode_call(&mut self.processor_state, &mut self.mem_map);
@@ -2544,115 +2529,6 @@ fn opcode_xthl(state: &mut ProcessorState, mem_map: &mut MemMap) {
 fn opcode_sphl(state: &mut ProcessorState, _mem_map: &mut MemMap) {
     state.stack_pointer = state.get_rp(RPairBitPattern::HL);
     state.prog_counter += 1;
-}
-
-/// IN port (I nput)
-/// (A) ~ (data)
-/// The data placed on the eight bit bi-directional data
-/// bus by the specified port is moved to register A.
-fn opcode_in(state: &mut ProcessorState, mem_map: &mut MemMap, ports: Arc<Mutex<PortState>>) {
-    let port_state = ports.lock().unwrap();
-    let second_byte = mem_map[state.prog_counter + 1];
-
-    match second_byte {
-        0x01 => {
-            state.reg_a = port_state.read_port_1;
-        }
-        0x02 => {
-            state.reg_a = port_state.read_port_2;
-        }
-        0x03 => {
-            state.reg_a = port_state.write_port_4 << port_state.write_port_2;
-        }
-        _ => {
-            panic!("Unexpected port in opcode_in")
-        }
-    }
-    state.prog_counter += 2;
-}
-
-/// OUT port (Output)
-/// (data) ~ (A)
-/// The content of register A is placed on the eight bit
-/// bi-directional data bus for transmission to the spec-
-/// ified port.
-fn opcode_out(state: &mut ProcessorState, mem_map: &mut MemMap, ports: Arc<Mutex<PortState>>) {
-    let mut port_state = ports.lock().unwrap();
-    let second_byte = mem_map[state.prog_counter + 1];
-    match second_byte {
-        0x01 => {
-            port_state.write_port_1 = state.reg_a;
-        }
-        0x02 => {
-            port_state.write_port_2 = state.reg_a;
-        }
-        0x04 => {
-            port_state.write_port_4 = state.reg_a;
-        }
-        // Sound port
-        0x03 => {
-            let new_port_value = state.reg_a;
-            let old_port_value = port_state.write_port_3;
-            if new_port_value != old_port_value {
-                if (new_port_value & 0x01 != 0) && (old_port_value & 0x01 == 0)
-                {
-                    sound::set_loop("0", true);
-                    sound::play_sound("0");
-                }
-                else if (new_port_value & 0x01 == 0) && (old_port_value & 0x01 != 0)
-                {
-                    sound::set_loop("0", false);
-                }
-                if (new_port_value & 0x02) != (old_port_value & 0x02)
-                {
-                    sound::play_sound("1");
-                }
-                if (new_port_value & 0x04) != (old_port_value & 0x04)
-                {
-                    sound::play_sound("2");
-                }
-                if (new_port_value & 0x08) != (old_port_value & 0x08)
-                {
-                    sound::play_sound("3");
-                }                                
-                port_state.write_port_3 = new_port_value;
-            }
-        }
-        // Sound port
-        0x05 => {
-            let new_port_value = state.reg_a;
-            let old_port_value = port_state.write_port_5;
-            if new_port_value != old_port_value {
-                if (new_port_value & 0x01) != (old_port_value & 0x01)
-                {
-                    sound::play_sound("4");
-                }
-                if (new_port_value & 0x0) != (old_port_value & 0x02)
-                {
-                    sound::play_sound("5");
-                }
-                if (new_port_value & 0x04) != (old_port_value & 0x04)
-                {
-                    sound::play_sound("6");
-                }
-                if (new_port_value & 0x08) != (old_port_value & 0x08)
-                {
-                    sound::play_sound("7");
-                }
-                if (new_port_value & 0x10) != (old_port_value & 0x10)
-                {
-                    sound::play_sound("8");
-                }
-                port_state.write_port_5 = new_port_value;
-            }
-        }
-        // Todo: watchdog, do we even care to emulate this?
-        0x06 => {}
-        _ => {
-            panic!("Unexpected port in opcode_out")
-        }
-    }
-    state.prog_counter += 2;
 }
 
 /// EI (Enable interrupts)

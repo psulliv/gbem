@@ -44,8 +44,6 @@ features = [
 
 ]
 
-[build-dependencies]
-cc = "1.0"
 
 [[bin]]
 name = "console_emulation"

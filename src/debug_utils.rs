@@ -1,7 +1,7 @@
 #![allow(unused)]
 
-use crate::eighty_eighty_emulator::{ConditionFlags, ProcessorState};
-use crate::machine::{MachineState, PortState};
+use crate::machine::MachineState;
+use crate::sm83::{ConditionFlags, ProcessorState};
 use lazy_static::lazy_static;
 use std::fmt::Write;
 
@@ -62,11 +62,6 @@ impl RefState {
     }
 }
 
-extern "C" {
-    pub fn Emulate8080Op(ref_state: &mut RefState) -> u8;
-    pub fn GenerateInterrupt(ref_state: &mut RefState, int_num: u8);
-}
-
 pub fn pause() {
     let mut stdin = io::stdin();
     let _ = stdin.read(&mut [0u8]).unwrap();
@@ -81,93 +76,6 @@ pub fn debug_console_print(print_this: &String) {
     if cfg!(target_arch = "x86_64") {
         println!("{}", &print_this);
     }
-}
-
-pub fn keyboard_port_bits_printer(state: &std::sync::Arc<std::sync::Mutex<PortState>>) -> String {
-    let guard = state.lock().unwrap();
-    let mut some_string = String::new();
-    write!(
-        some_string,
-        "coin is {}, ",
-        if ((guard.read_port_1 & 0b1) == 0b0) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P2 start button {}, ",
-        if ((guard.read_port_1 & 0b10) == 0b10) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P1 start button {}, ",
-        if ((guard.read_port_1 & 0b100) == 0b100) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P1 shoot button {}, ",
-        if ((guard.read_port_1 & 0b1_0000) == 0b1_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P1 left button {}, ",
-        if ((guard.read_port_1 & 0b10_0000) == 0b10_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P1 right button {}, ",
-        if ((guard.read_port_1 & 0b100_0000) == 0b100_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P2 shoot button {}, ",
-        if ((guard.read_port_2 & 0b1_0000) == 0b1_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P2 left button {}, ",
-        if ((guard.read_port_2 & 0b10_0000) == 0b10_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    write!(
-        some_string,
-        "P2 right button {}, ",
-        if ((guard.read_port_2 & 0b100_0000) == 0b100_0000) {
-            "active"
-        } else {
-            "not active"
-        }
-    );
-    some_string
 }
 
 pub fn opcode_printer(state: &MachineState) {

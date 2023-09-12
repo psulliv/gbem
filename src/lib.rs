@@ -1,16 +1,14 @@
+#![allow(unused)]
 pub mod debug_utils;
 mod display_output;
-mod eighty_eighty_emulator;
-mod sound;
 pub mod machine;
+mod sm83;
 pub mod space_invaders_rom;
-use eighty_eighty_emulator::{MemMap, ProcessorState};
 #[cfg(target_arch = "wasm32")]
 use fluvio_wasm_timer::Delay;
 #[cfg(target_arch = "wasm32")]
-use machine::start_keyboard_listeners;
 use machine::MachineState;
-use sound::load_audio;
+use sm83::{MemMap, ProcessorState};
 use std::time::Duration;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -20,8 +18,6 @@ use wasm_bindgen::prelude::*;
 pub async fn js_entry_point() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
     let machine = MachineState::new();
-    start_keyboard_listeners(&machine);
-    load_audio();
     wasm_bindgen_futures::spawn_local(emulation_loop(machine));
     Ok(())
 }
