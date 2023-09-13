@@ -3,6 +3,7 @@
 // http://www.bitsavers.org/components/sharp/_dataBooks/1996_Sharp_Microcomputer_Data_Book.pdf
 // 148-198 (pdf pages, not marked pages)
 
+// Todo: switch out with a rom loader
 use crate::{debug_utils, machine::MachineState, space_invaders_rom};
 use bitflags::bitflags;
 use std::{
@@ -2607,6 +2608,7 @@ fn opcode_halt(_state: &mut ProcessorState, _mem_map: &mut MemMap) {
 pub mod tests {
     use super::*;
     use crate::space_invaders_rom;
+    #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::*;
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]

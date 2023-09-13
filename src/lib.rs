@@ -1,8 +1,9 @@
 #![allow(unused)]
 pub mod debug_utils;
-mod display_output;
+pub mod display_output;
 pub mod machine;
-mod sm83;
+pub mod sm83;
+pub mod sm83_opcode_info;
 pub mod space_invaders_rom;
 #[cfg(target_arch = "wasm32")]
 use fluvio_wasm_timer::Delay;
