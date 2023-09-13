@@ -21,12 +21,6 @@ pub fn debug_console_print(print_this: &String) {
     }
 }
 
-pub fn load_json_opcodes() -> serde_json::Value {
-    let raw_json: String =
-        String::from_utf8_lossy(&fs::read("sm83_opcodes.json").unwrap()).to_string();
-    serde_json::from_str(&raw_json).unwrap()
-}
-
 pub fn opcode_printer(state: &MachineState) {
     // 1a35 INX    D   .sp..  A $00 B $af C $00 D $1b E $52 H $20 L $52 SP 23fe
     // print the address in hex, print the instruction and source/dest, flags, registers
@@ -133,13 +127,4 @@ pub fn debug_print_op_code(opcode: u8) -> (String, u8, String) {
         0,
         String::from("Not implemented! but should be a description"),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_sm83_opcode_list_basic() {
-        assert!(True);
-    }
 }
