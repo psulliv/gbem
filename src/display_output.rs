@@ -88,14 +88,13 @@ pub fn write_canvas_element(machine: &MachineState) {
 #[allow(unused)]
 pub fn write_console_term(machine: &MachineState) {
     // 7k video ram 0x2400 - 0x3FFF
-
-    let vid_bits: Vec<char> = BitVec::<Lsb0, u8>::from_slice(
-        &machine.mem_map.rw_mem[INITIAL_VIDEO_MEM_IDX..END_VIDEO_RAM],
-    )
-    .unwrap()
-    .iter()
-    .map(|bref| if *bref { '\u{2588}' } else { ' ' })
-    .collect();
+    let mut vid_mem = [0; END_VIDEO_RAM - INITIAL_VIDEO_MEM_IDX];
+    vid_mem[INITIAL_VIDEO_MEM_IDX..END_VIDEO_RAM]
+        .clone_from_slice(&machine.mem_map.rw_mem[INITIAL_VIDEO_MEM_IDX..END_VIDEO_RAM]);
+    let vid_bits: Vec<char> = BitSlice::<_, Lsb0>::from_slice(&vid_mem)
+        .iter()
+        .map(|bref| if *bref { '\u{2588}' } else { ' ' })
+        .collect();
 
     let mut count = 0;
     print!("{}[2J", 27 as char);

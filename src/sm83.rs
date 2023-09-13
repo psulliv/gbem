@@ -1,5 +1,8 @@
 #![allow(clippy::unusual_byte_groupings)]
 
+// http://www.bitsavers.org/components/sharp/_dataBooks/1996_Sharp_Microcomputer_Data_Book.pdf
+// 148-198 (pdf pages, not marked pages)
+
 use crate::{debug_utils, machine::MachineState, space_invaders_rom};
 use bitflags::bitflags;
 use std::{
@@ -10,8 +13,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+// Todo: This is machine specific, move somewhere else and update for SM83
 const CYCLES_BEFORE_ISR: usize = 300_000;
 
+// Todo: architecture specific, should be getting this from sm83_opcode.json
 const CYCLES8080: [u8; 256] = [
     4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x00..0x0f
     4, 10, 7, 5, 5, 5, 7, 4, 4, 10, 7, 5, 5, 5, 7, 4, //0x10..0x1f
@@ -381,14 +386,10 @@ pub enum ConditionBitPattern {
 impl From<u8> for ConditionBitPattern {
     fn from(this_byte: u8) -> Self {
         match this_byte {
-            0b000 => ConditionBitPattern::NZ,
-            0b001 => ConditionBitPattern::Z,
-            0b010 => ConditionBitPattern::NC,
-            0b011 => ConditionBitPattern::C,
-            0b100 => ConditionBitPattern::PO,
-            0b101 => ConditionBitPattern::PE,
-            0b110 => ConditionBitPattern::P,
-            0b111 => ConditionBitPattern::M,
+            0b00 => ConditionBitPattern::NZ,
+            0b01 => ConditionBitPattern::Z,
+            0b10 => ConditionBitPattern::NC,
+            0b11 => ConditionBitPattern::C,
             _ => panic!("failed to parse u8 to ConditionBitPattern"),
         }
     }
@@ -457,57 +458,75 @@ impl MachineState {
                 opcode_nop(&mut self.processor_state);
             }
             0x01 => {
+                // LD BC, n16
                 opcode_lxi(&mut self.processor_state, &mut self.mem_map);
             }
             0x02 => {
+                // LD [BC], A
                 opcode_stax(&mut self.processor_state, &mut self.mem_map);
             }
             0x03 => {
+                // inc BC
                 opcode_inx(&mut self.processor_state, &mut self.mem_map);
             }
             0x04 => {
+                // inc B
                 opcode_inr(&mut self.processor_state, &mut self.mem_map);
             }
             0x05 => {
+                // dec B
                 opcode_dcr(&mut self.processor_state, &mut self.mem_map);
             }
             0x06 => {
+                // move immediate to B
                 opcode_mvi(&mut self.processor_state, &mut self.mem_map);
             }
             0x07 => {
+                // rotate left A
                 opcode_rlc(&mut self.processor_state);
             }
             0x08 => {
-                panic!("Bogus opcode, bailing");
+                // LD [A16], SP, maybe load stack pointer somewhere?
+                panic!("LD [a16] SP, 3 - 20, not implemented");
             }
             0x09 => {
+                // add register pair BC to HL
                 opcode_dad(&mut self.processor_state, &mut self.mem_map);
             }
             0x0a => {
+                // LD A, [BC], content of memory location
                 opcode_ldax(&mut self.processor_state, &mut self.mem_map);
             }
             0x0b => {
+                // dec BC
                 opcode_dcx(&mut self.processor_state, &mut self.mem_map);
             }
             0x0c => {
+                // inc C
                 opcode_inr(&mut self.processor_state, &mut self.mem_map);
             }
             0x0d => {
+                // dec C
                 opcode_dcr(&mut self.processor_state, &mut self.mem_map);
             }
             0x0e => {
+                // LD C, n8, immediate to C
                 opcode_mvi(&mut self.processor_state, &mut self.mem_map);
             }
             0x0f => {
+                // right rotate accumulator
                 opcode_rrc(&mut self.processor_state);
             }
             0x10 => {
-                panic!("Bogus opcode, bailing");
+                // Stop n8
+                panic!("Stop n8, not implemented");
             }
             0x11 => {
+                // LD DE, n16
                 opcode_lxi(&mut self.processor_state, &mut self.mem_map);
             }
             0x12 => {
+                // Store DE memory in accumulator
                 opcode_stax(&mut self.processor_state, &mut self.mem_map);
             }
             0x13 => {
@@ -526,7 +545,7 @@ impl MachineState {
                 opcode_ral(&mut self.processor_state);
             }
             0x18 => {
-                panic!("Bogus opcode, bailing");
+                panic!("JR e8 not implemented");
             }
             0x19 => {
                 opcode_dad(&mut self.processor_state, &mut self.mem_map);
@@ -550,13 +569,14 @@ impl MachineState {
                 opcode_rar(&mut self.processor_state);
             }
             0x20 => {
-                panic!("Bogus opcode, bailing: {}", cur_instruction);
+                panic!("0x20 JR NZ, e8 not implemented");
             }
             0x21 => {
                 opcode_lxi(&mut self.processor_state, &mut self.mem_map);
             }
             0x22 => {
-                opcode_shld(&mut self.processor_state, &mut self.mem_map);
+                panic!("LD [HL+] N16 to A not implemented ")
+                //opcode_shld(&mut self.processor_state, &mut self.mem_map);
             }
             0x23 => {
                 opcode_inx(&mut self.processor_state, &mut self.mem_map);
@@ -574,13 +594,14 @@ impl MachineState {
                 opcode_daa(&mut self.processor_state);
             }
             0x28 => {
-                panic!("Bogus opcode, bailing");
+                panic!("0x28 JR Z, e8 not implemented");
             }
             0x29 => {
                 opcode_dad(&mut self.processor_state, &mut self.mem_map);
             }
             0x2a => {
-                opcode_lhld(&mut self.processor_state, &mut self.mem_map);
+                panic!("0x2a LD A, [HL+] not implemented")
+                //opcode_lhld(&mut self.processor_state, &mut self.mem_map);
             }
             0x2b => {
                 opcode_dcx(&mut self.processor_state, &mut self.mem_map);
@@ -598,13 +619,14 @@ impl MachineState {
                 opcode_cma(&mut self.processor_state);
             }
             0x30 => {
-                panic!("Bogus opcode, bailing");
+                panic!("0x30 JR NC e8, not implemented");
             }
             0x31 => {
                 opcode_lxi(&mut self.processor_state, &mut self.mem_map);
             }
             0x32 => {
-                opcode_sta(&mut self.processor_state, &mut self.mem_map);
+                panic!("0x32 LD [HL-] A, not implemented");
+                //opcode_sta(&mut self.processor_state, &mut self.mem_map);
             }
             0x33 => {
                 opcode_inx(&mut self.processor_state, &mut self.mem_map);
@@ -622,13 +644,14 @@ impl MachineState {
                 opcode_stc(&mut self.processor_state);
             }
             0x38 => {
-                panic!("Bogus opcode, bailing");
+                panic!("0x38 JR C e8, not implemented");
             }
             0x39 => {
                 opcode_dad(&mut self.processor_state, &mut self.mem_map);
             }
             0x3a => {
-                opcode_lda(&mut self.processor_state, &mut self.mem_map);
+                //opcode_lda(&mut self.processor_state, &mut self.mem_map);
+                panic!("0x3a LD A [HL-], not implemented");
             }
             0x3b => {
                 opcode_dcx(&mut self.processor_state, &mut self.mem_map);
@@ -1051,7 +1074,7 @@ impl MachineState {
                 opcode_adi(&mut self.processor_state, &mut self.mem_map);
             }
             0xc7 => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("RST $00 not implemented");
             }
             0xc8 => {
                 opcode_ret(&mut self.processor_state, &mut self.mem_map);
@@ -1063,7 +1086,7 @@ impl MachineState {
                 opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xcb => {
-                panic!("Bogus opcode, bailing");
+                panic!("0xcb prefix, not implemented");
             }
             0xcc => {
                 opcode_call(&mut self.processor_state, &mut self.mem_map);
@@ -1075,7 +1098,7 @@ impl MachineState {
                 opcode_aci(&mut self.processor_state, &mut self.mem_map);
             }
             0xcf => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xcf RST $08 not implemented");
             }
             0xd0 => {
                 opcode_ret(&mut self.processor_state, &mut self.mem_map);
@@ -1099,13 +1122,13 @@ impl MachineState {
                 opcode_sui(&mut self.processor_state, &mut self.mem_map);
             }
             0xd7 => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xd7 RST $10 not implemented");
             }
             0xd8 => {
                 opcode_ret(&mut self.processor_state, &mut self.mem_map);
             }
             0xd9 => {
-                panic!("Bogus opcode, bailing");
+                panic!("0xd9 RET I not implemented");
             }
             0xda => {
                 opcode_jmp(&mut self.processor_state, &mut self.mem_map);
@@ -1117,28 +1140,32 @@ impl MachineState {
                 opcode_call(&mut self.processor_state, &mut self.mem_map);
             }
             0xdd => {
-                panic!("Bogus opcode, bailing");
+                panic!("0xdd, unimplemented for SM83");
             }
             0xde => {
                 opcode_sbi(&mut self.processor_state, &mut self.mem_map);
             }
             0xdf => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xdf RST $18 not implemented");
             }
             0xe0 => {
-                opcode_ret(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe0 LDH [a8] A not implemented");
+                //opcode_ret(&mut self.processor_state, &mut self.mem_map);
             }
             0xe1 => {
                 opcode_pop(&mut self.processor_state, &mut self.mem_map);
             }
             0xe2 => {
-                opcode_jmp(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe2 LD [C] A not implemented");
+                // opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xe3 => {
-                opcode_xthl(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe3 not implemented in SM83");
+                //opcode_xthl(&mut self.processor_state, &mut self.mem_map);
             }
             0xe4 => {
-                opcode_call(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe4 not implemented in SM83");
+                //opcode_call(&mut self.processor_state, &mut self.mem_map);
             }
             0xe5 => {
                 opcode_push(&mut self.processor_state, &mut self.mem_map);
@@ -1147,46 +1174,54 @@ impl MachineState {
                 opcode_ani(&mut self.processor_state, &mut self.mem_map);
             }
             0xe7 => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xe7 RST $20 not implemented");
             }
             0xe8 => {
-                opcode_ret(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe8 ADD SP e8 not implemented");
+                //opcode_ret(&mut self.processor_state, &mut self.mem_map);
             }
             0xe9 => {
-                opcode_pchl(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xe9 JP HL not implemented");
+                // opcode_pchl(&mut self.processor_state, &mut self.mem_map);
             }
             0xea => {
-                opcode_jmp(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xea LD [a16] A not implemented");
+                //opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xeb => {
-                opcode_xchg(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xeb not implemented in SM83");
+                //opcode_xchg(&mut self.processor_state, &mut self.mem_map);
             }
             0xec => {
-                opcode_call(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xec not implemented in SM83");
+                //opcode_call(&mut self.processor_state, &mut self.mem_map);
             }
             0xed => {
-                panic!("Bogus opcode, bailing");
+                panic!("0xed not implemented in SM83");
             }
             0xee => {
                 opcode_xri(&mut self.processor_state, &mut self.mem_map);
             }
             0xef => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xef RST $28 not implemented");
             }
             0xf0 => {
-                opcode_ret(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xf0 LDH A [a8] not implemented");
+                //opcode_ret(&mut self.processor_state, &mut self.mem_map);
             }
             0xf1 => {
                 opcode_pop(&mut self.processor_state, &mut self.mem_map);
             }
             0xf2 => {
-                opcode_jmp(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xf2 LD A [C] not implemented");
+                // opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xf3 => {
                 opcode_di(&mut self.processor_state, &mut self.mem_map);
             }
             0xf4 => {
-                opcode_call(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xf4 not implemented in SM83");
+                // opcode_call(&mut self.processor_state, &mut self.mem_map);
             }
             0xf5 => {
                 opcode_push(&mut self.processor_state, &mut self.mem_map);
@@ -1195,31 +1230,34 @@ impl MachineState {
                 opcode_ori(&mut self.processor_state, &mut self.mem_map);
             }
             0xf7 => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xf7 RST $30 not implemented");
             }
             0xf8 => {
-                opcode_ret(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xf8 LD HL, SP + e8 not implemented");
+                // opcode_ret(&mut self.processor_state, &mut self.mem_map);
             }
             0xf9 => {
                 opcode_sphl(&mut self.processor_state, &mut self.mem_map);
             }
             0xfa => {
-                opcode_jmp(&mut self.processor_state, &mut self.mem_map);
+                panic!("LD A, [a16] not implemented");
+                // opcode_jmp(&mut self.processor_state, &mut self.mem_map);
             }
             0xfb => {
                 opcode_ei(&mut self.processor_state, &mut self.mem_map);
             }
             0xfc => {
-                opcode_call(&mut self.processor_state, &mut self.mem_map);
+                panic!("0xfc not implemented in SM83");
+                // opcode_call(&mut self.processor_state, &mut self.mem_map);
             }
             0xfd => {
-                panic!("Bogus opcode, bailing");
+                panic!("0xfd not implemented in SM83");
             }
             0xfe => {
                 opcode_cpi(&mut self.processor_state, &mut self.mem_map);
             }
             0xff => {
-                panic!("interrupt vectors emulated at start of iterate_state");
+                panic!("0xff RST $38 not implemented");
             }
         };
         if self.processor_state.trace_me {
@@ -2561,6 +2599,9 @@ fn opcode_halt(_state: &mut ProcessorState, _mem_map: &mut MemMap) {
 
 // Todo: See if we can convert the Arc::Mutex to an Rc::RefCell, there is certainly
 // a space invaders 8080 emulator  implementation in wasm32 that does this.
+
+// Todo: Convert the register pair bit patterns to be specific to the dd, qq, ss
+// register pair patterns that are used in the SM83 insn set.
 
 #[cfg(test)]
 pub mod tests {
