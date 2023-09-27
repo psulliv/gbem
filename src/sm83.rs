@@ -37,6 +37,7 @@ const CYCLES8080: [u8; 256] = [
     11, 10, 10, 4, 17, 11, 7, 11, 11, 5, 10, 4, 17, 17, 7, 11, //
 ];
 
+// Todo: get the right flags set here. Maybe don't have P, AC
 bitflags! {
     pub struct ConditionFlags: u8 {
     const CY = 0b0000_0001;
@@ -82,6 +83,8 @@ pub struct ProcessorState {
     pub cycle_count_since_last_int: u128,
 }
 
+// Todo: These interrupts are machine specific and
+// also not sm83 for GB specific
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum ProcessorInterrupt {
     ScanLine96 = 1,
@@ -111,7 +114,7 @@ impl ProcessorState {
         }
     }
 
-    // Gets value from a register, given its bit pattern.
+    /// Gets value from a register, given its bit pattern.
     pub fn get_reg_value(&self, pattern: RegisterBitPattern) -> Option<u8> {
         match pattern {
             RegisterBitPattern::A => Some(self.reg_a),
@@ -125,7 +128,7 @@ impl ProcessorState {
         }
     }
 
-    // Sets register value
+    /// Sets register value
     pub fn set_reg_value(&mut self, pattern: RegisterBitPattern, value: u8) -> Option<()> {
         match pattern {
             RegisterBitPattern::A => {
@@ -160,13 +163,13 @@ impl ProcessorState {
         }
     }
 
-    // Gets value at the address indicated by the register pair bit pattern
+    /// Gets value at the address indicated by the register pair bit pattern
     pub fn get_mem_value(&mut self, reg_pair: RPairBitPattern, mem_map: &MemMap) -> u8 {
         let addr = self.get_rp(reg_pair);
         mem_map[addr]
     }
 
-    // Sets value at the address indicated by the register pair bit pattern
+    /// Sets value at the address indicated by the register pair bit pattern
     pub fn set_mem_value(&mut self, reg_pair: RPairBitPattern, mem_map: &mut MemMap, value: u8) {
         let addr = self.get_rp(reg_pair);
         mem_map[addr] = value;
@@ -249,10 +252,6 @@ impl ProcessorState {
             ConditionBitPattern::Z => self.flags.contains(ConditionFlags::Z),
             ConditionBitPattern::NC => !(self.flags.contains(ConditionFlags::CY)),
             ConditionBitPattern::C => self.flags.contains(ConditionFlags::CY),
-            ConditionBitPattern::PO => !(self.flags.contains(ConditionFlags::P)),
-            ConditionBitPattern::PE => self.flags.contains(ConditionFlags::P),
-            ConditionBitPattern::P => !(self.flags.contains(ConditionFlags::S)),
-            ConditionBitPattern::M => self.flags.contains(ConditionFlags::S),
         }
     }
 }
@@ -374,14 +373,10 @@ impl From<u8> for RegisterBitPattern {
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum ConditionBitPattern {
-    NZ = 0b000,
-    Z = 0b001,
-    NC = 0b010,
-    C = 0b011,
-    PO = 0b100,
-    PE = 0b101,
-    P = 0b110,
-    M = 0b111,
+    NZ = 0b00,
+    Z = 0b01,
+    NC = 0b10,
+    C = 0b11,
 }
 
 impl From<u8> for ConditionBitPattern {

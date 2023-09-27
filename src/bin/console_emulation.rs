@@ -14,3 +14,7 @@ async fn main() {
         }
     }
 }
+
+// Todo: Add a way to load the individual ROM files.
+// maybe make a static one like the Space Invaders ROM
+// for testing
